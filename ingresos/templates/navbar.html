@@ -1,0 +1,53 @@
+
+
+<div class="navbar navbar-collapse ps-3 pe-3 pt-4 pb-2 d-flex flex-column flex-shrink-0 text-white bg-dark" style="height:98vh;box-shadow: 8px 0 8px -4px rgba(0, 0, 0, 0.5);">
+
+    <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+      <span class="fs-4">{% if user.client %}{{ user.client.name.title() }}{% else %}{{ user.name.title() }}{% endif %}</span>
+    </a>
+    <hr>
+    <ul class="nav nav-pills flex-column mb-auto">
+      {% if user.__class__.__name__ == "Client" %}
+        <li>
+          <a href="{{ url_for('create_supplier') }}" class="btn btn-primary text-white nav-btn">
+            <i class="bi bi-truck" style="font-size:2em;" data-bs-toggle="tooltip" data-bs-placement="top" title="Registrar proveedores"></i>
+          </a>
+        </li>
+          <br>
+        <li>
+          <a href="{{ url_for('supp_list') }}" class="btn btn-primary text-white nav-btn">
+           <i class="bi bi-list-check" style="font-size:2em;" data-bs-toggle="tooltip" data-bs-placement="top" title="Lista de Proveedores"></i>
+          </a>
+        </li>
+        <br>
+        <li>
+          <a href="{{ url_for('admin_venues') }}" class="btn btn-primary text-white nav-btn">
+            <i class="bi bi-pin-map" style="font-size:2em;" data-bs-toggle="tooltip" data-bs-placement="top" title="Administrar sedes"></i>
+          </a>
+        </li>
+        <br>
+        <li>
+          <a href="" class="btn btn-primary text-white nav-btn">
+            <i class="bi bi-ui-checks" style="font-size:2em;" data-bs-toggle="tooltip" data-bs-placement="top" title="Formularios adicionales de ingreso"></i>
+          </a>
+        </li>
+      {% else %}
+        <li>
+          <a href="{{ url_for('register_worker') }}" class="btn btn-primary text-white nav-btn">
+            <i class="bi bi-person-badge" style="font-size:2em;" data-bs-toggle="tooltip" data-bs-placement="top" title="Mis trabajadores"></i>
+          </a>
+        </li>
+          <br>
+        <li>
+          <a href="{{ url_for('create_job') }}" class="btn btn-primary text-white nav-btn">
+            <i class="bi bi-calendar3" style="font-size:2em;" data-bs-toggle="tooltip" data-bs-placement="top" title="Agendar trabajos"></i>
+          </a>
+        </li>
+      {% endif %}
+    </ul>
+
+    <div class="dropdown">
+      <a href="{{ url_for('logout') }}"><i class="bi bi-door-open text-info" style="font-size:3em;" data-bs-toggle="tooltip" data-bs-placement="top" title="Cerrar"></i></a>
+    </div>
+  </div>
+

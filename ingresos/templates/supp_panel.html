@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Panel contratista{% endblock %}
+
+{% block content %}
+
+<div class="row">
+    <div class="col-3">
+        {% include "navbar.html" %}
+    </div>
+    <div class="col-9">
+        {{ user.client }}
+    </div>
+</div>
+
+
+{% endblock %}

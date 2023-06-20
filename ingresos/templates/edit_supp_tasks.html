@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Asignar tareas{% endblock %}
+
+{% block content %}
+  <div class="row">
+      <div class="col-3">{% include "navbar.html" %}</div>
+      <div class="col-9">
+          <h1>Aginar trabajo al provedor {{ supp_name }}</h1>
+       <form action="{{ url_for('edit_supp_tasks', user_id=user.id, supp_id=supp_id) }}" class="mt-5" method="post">
+            {{ form.hidden_tag() }}
+            <div class="form-floating">
+              {{ form.description(class="form-control", placeholder="Descripción") }}<br>
+              {{ form.description.label(for="floatingInput") }}
+             </div>
+             {{ form.supp_id(value=supp_id, hidden=True) }}
+             {{ form.submit }}
+       </form>
+      </div>
+  </div>
+{% endblock %}

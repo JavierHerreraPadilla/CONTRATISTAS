@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ user.name }}{% endblock %}
+
+
+{% block content %}
+
+<div class="row">
+  <div class="col-3">{% include "navbar.html" %}</div>
+  <div class="col-9">
+
+    <br>
+    {{ supps }}
+    <hr>
+    {% for supp in supps %}
+     {{ supp }}: {{ supp.jobs }} <br>
+    {% endfor %}
+
+
+    <table class="table table-bordered mt-5 table-calendar">
+      <thead>
+       {% for day_name in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"] %}
+         <th class="text-center td-head">{{ day_name }}</th>
+       {% endfor %}
+      </thead>
+    {% for week in current_month %}
+      <tr>
+        {% for day in week %}
+         <td class="td-calendar">{{ day }}</td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+    </table>
+  </div>
+
+</div>
+{% endblock %}
+

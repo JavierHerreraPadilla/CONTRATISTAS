@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Calendario{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-3">{% include "navbar.html" %}</div>
+  <div class="col-9">
+    <table class="table table-bordered mt-5">
+      <thead>
+       {% for day_name in ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"] %}
+         <th class="text-center td-head">{{ day_name }}</th>
+       {% endfor %}
+      </thead>
+    {% for week in current_month %}
+      <tr>
+        {% for day in week %}
+         <td>{{ day }}</td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+    </table>
+  </div>
+
+</div>
+{% endblock %}
+

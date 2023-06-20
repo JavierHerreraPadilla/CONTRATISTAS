@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Sedes{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-3">
+            {% include "navbar.html" %}
+        </div>
+        <div class="col-9 pt-2">
+          <h3>Administrar sedes</h3>
+
+            <hr>
+            <table class="table table-bordered border-info">
+            {% for venue in venues %}
+              <form action="{{ url_for('edit_venue') }}" method="post">
+                <thead>
+                 <th>
+                     <input type="text" name="venue_name" value="{{ venue.venue_name }}">
+                     <input hidden type="number" name="id" value="{{ venue.id }}"></th>
+                 </th>
+                 <th><input type="submit" class="btn btn-info" value="Cambiar nombre"></th>
+                 <th><a href="{{ url_for('edit_venue', venue_id=venue.id) }}">
+                     <i class="bi bi-dash-circle"></i>Borrar</a>
+                 </th>
+                
+                </thead>
+              </form>
+            {% endfor %}
+            </table>
+            <br>
+            <hr>
+            <div class="container w-25 text-center">
+                <a href="{{ url_for('edit_venue', action=1) }}"><i class="bi bi-plus-circle" style="color:green;font-size:4em;"></i></a>
+            </div>
+
+        </div>
+    </div>
+
+{% endblock %}

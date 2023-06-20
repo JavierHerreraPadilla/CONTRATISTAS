@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Agendar trabajo{% endblock %}
+
+{% block content %}
+<div class="row">
+    {% include "navbar.html" %}
+  <div class="col">
+      <h1>Agendar trabajos</h1>
+      <div class="row mt-3 bordered bordered-primary">
+      <div class="col-4 pe-0">
+      <form action="{{ url_for('add_worker_to_list') }}" method="POST" name="w_list">
+          <div class="row">
+              <div class="col-10">
+              <table class="table table-striped table-hover table-sm">
+                  <thead>
+                  <th>Identificación</th>
+                  <th>Apellido</th>
+                  <th>Nombre</th>
+                  </thead>
+                  {% for worker in workers %}
+                  <tr>
+                    <td>{{ worker.identification }}</td>
+                    <td><label for="w-{{ worker.id }}">{{ worker.last_name }}</label></td>
+                    <td><label for="w-{{ worker.id }}">{{ worker.first_name }}</label></td>
+                    <td><input type="checkbox" name="w-{{ worker.id }}" id="w-{{ worker.id }}" value="{{ worker.id }}"></td>
+                  </tr>
+                  {% endfor %}
+              </table>
+              </div>
+              <div class="col-1 ps-0">
+                  <input type="submit" class="btn btn-info" value=">">
+              </div>
+          </div>
+      </form>
+      </div>
+    <div class="ms-0 col-8 border mb-3" id="workers-added">
+       {% if added_workers %}
+        <a href="{{ url_for('remove_worker_form_list', delete_all=1) }}" class="btn btn-warning">Sacar todos</a>
+      {% endif %}
+        <table class="table table-striped table-hover table-sm">
+            <thead>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Labor</th>
+                <th>Sacar</th>
+            </thead>
+        {% if added_workers %}
+            <tbody>
+                <form action="{{ url_for('create_job') }}" method="post">
+                    {{ forms.hidden_tag() }}
+                    {% for index, worker in added_workers %}
+                    <tr>
+                      <td>{{ worker.first_name  }}</td>
+                      <td>{{ worker.last_name  }}</td>
+                      <td class="text-starts">
+                          {% for label, field in forms.jobs[index].form._fields.items() %}
+                            {% if label == "title" %}
+                                {{ continue }}
+                            {% else %}
+                              {{ field }}
+                            {% endif %}
+                          {% endfor %}
+                      </td>
+                      <td>
+                          <a href="{{ url_for('remove_worker_form_list', index=index) }}">Sacar</a>
+                      </td>
+                  </tr>
+                {% endfor %}
+                <input type="submit" value="Guardar trabajos" class="btn btn-info">
+            </form>
+            </tbody>
+        </table>
+      {% endif %}
+    </div>
+  </div>
+ </div>
+</div>
+
+
+{% endblock %}

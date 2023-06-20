@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Ingresos!{% endblock %}
+
+{% block content %}
+
+<div class="container w-50 mt-5 pd-3">
+  <div class="row">
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+      <div class="col-5 text-center">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#login" type="button" role="tab" aria-controls="home" aria-selected="true">LogIn</button>
+          </li>
+      </div>
+      <div class="col-5 text-center">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#register" type="button" role="tab" aria-controls="profile" aria-selected="false">Register</button>
+          </li>
+      </div>
+        </ul>
+  </div>
+  <div class="tab-content" id="myTabContent">
+    <div class="tab-pane fade show active text-center mt-5" id="login" role="tabpanel" aria-labelledby="home-tab">
+
+       <form action="{{ url_for('login') }}" method="POST">
+         {{ log_form.hidden_tag() }}
+          <h1 class="h3 mb-3 fw-normal">Please Login</h1>
+
+          <div class="form-floating">
+            {{ log_form.nit(class="form-control", placeholder="NIT") }}
+            {{ log_form.nit.label(for="floatingInput") }}
+
+          </div>
+           <br>
+          <div class="form-floating">
+            {{ log_form.password(class="form-control", placeholder="Contraseña") }}
+            {{ log_form.password.label(for="floatingPassword") }}
+          </div>
+
+          <div class="checkbox mb-3">
+            <label>
+              <input type="checkbox" value="remember-me"> Remember me
+            </label>
+          </div>
+          <button class="w-100 btn btn-lg btn-primary" type="submit">Sign in</button>
+          <p class="mt-5 mb-3 text-muted">©</p>
+        </form>
+
+    </div>
+    <div class="tab-pane fade text-center mt-5" id="register" role="tabpanel" aria-labelledby="profile-tab">
+
+       <form action="{{ url_for('register') }}" method="POST">
+         {{ reg_form.hidden_tag() }}
+
+          <h1 class="h3 mb-3 fw-normal">Please Register</h1>
+          <div class="form-floating">
+            {{ reg_form.name(class="form-control", placeholder="NIT") }}
+            {{ reg_form.name.label(for="floatingInput") }}
+          </div>
+           <br>
+          <div class="form-floating">
+            {{ reg_form.nit(class="form-control", placeholder="NIT") }}
+            {{ reg_form.nit.label(for="floatingInput") }}
+          </div>
+           <br>
+           <div class="form-floating">
+            {{ reg_form.email(class="form-control", placeholder="NIT") }}
+            {{ reg_form.email.label(for="floatingInput") }}
+          </div>
+           <br>
+          <div class="form-floating">
+            {{ reg_form.password(class="form-control", placeholder="Contraseña") }}
+            {{ reg_form.password.label(for="floatingPassword") }}
+          </div>
+           <br>
+           {{ reg_form.submit(class="w-100 btn btn-lg btn-primary") }}
+           <p class="mt-5 mb-3 text-muted">©</p>
+        </form>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <title>{% block title %}{% endblock %}</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+</head>
+<body style="height:100%;">
+
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+          <div class="shadow alert alert-{{ category }} alert-dismissible fade show  d-flex align-items-center position-fixed top-0 start-50 translate-middle-x" role="alert" id="alert-div" style="opacity: 0; z-index: 9999; width: 80%;">
+            <strong>{{ message }}</strong>
+            <strong><button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></strong>
+          </div>
+         <script>
+             $(document).ready(function() {
+                $('#alert-div').animate({opacity: 1}, 700);
+            });
+              setTimeout(function() {
+              $('.alert').alert('close');
+            }, 8000);
+
+          </script>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+
+{% block content %}
+{% endblock %}
+
+</body>
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Playfair+Display:wght@400;800&display=swap');
+
+.table-calendar {
+  padding-left: 220px; /* Replace 70px with the height of your navbar */
+  padding-right: 40px; /* Replace 70px with the height of your navbar */
+  padding-top: 40PX; /* Replace 70px with the height of your navbar */
+  font-family: 'Inter', sans-serif;
+  font-size:13px;
+}
+
+.td-calendar {
+        width: 50px;
+        height: 100px;
+    }
+
+
+        .table thead th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .sticky-button {
+            position: fixed;
+            left: 350px;
+            top: 80px;
+            z-index: 999;
+        }
+
+        /* Add some styles to make the button more noticeable */
+        .sticky-button button {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+.navbar-collapse {
+  max-width: 120px;
+  overflow: hidden;
+  transition: max-width 0.3s ease-out;
+}
+
+.nav-btn {
+    width:60px;
+    height:50px;
+    font-size:0.8rem;
+}
+
+.navbar:hover  {
+  max-width: 140px; /* Adjust the value to the desired height */
+  transition: max-width 0.3s ease-in;
+
+}
+
+#workers-added {
+     height: 600px; /* Set the fixed height */
+     min-height: 0; /* Reset the min-height property */
+     overflow-y: auto; /* Enable vertical scrolling */
+}
+
+body {
+    font-size:0.9rem;
+}
+
+</style>
+</html>

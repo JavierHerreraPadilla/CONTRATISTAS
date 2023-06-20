@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Lista proveedores{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-3">
+    {% include "navbar.html" %}
+  </div>
+  <div class="col-8 mt-4">
+    <h1>Lista de proveedores</h1>
+    <h1>Tareas habilitadas</h1>
+          <table class="table">
+              <thead>
+                  <th>PROVEEDOR</th>
+                  <th>ESTADO</th>
+                  <th>CAMBIAR ESTADO</th>
+                  <th>TAREAS</th>
+                  <th>AÑADIR TAREA</th>
+              </thead>
+              <tbody>
+                  {% for supp in suppliers %}
+                    <tr>
+                        <td>{{ supp.name }}</td>
+                        <td>{{ supp.abled }}</td>
+                        <td>
+                          {% if not supp.abled %}
+                            <a href="{{ url_for('change_status', supp_id=supp.id, status=1) }}"><i class="bi bi-check2-circle" style="color:green;" data-bs-toggle="tooltip" data-bs-placement="top" title="Habilitar proveedor"></i></a>
+                          {% else %}
+                            <a href="{{ url_for('change_status', supp_id=supp.id) }}"><i class="bi bi-x-circle" style="color:red;" data-bs-toggle="tooltip" data-bs-placement="top" title="Deshabilitar proveedor"></i></a>
+                          {% endif%}
+                        </td>
+                        <td>
+                            {% if supp.assigned_jobs | length == 0 %}
+                                No has programado tareas a este proveedor
+                            {% endif %}
+                            <ol>
+                            {% for task in supp.assigned_jobs %}
+                                <li>
+                                    {{ task.description }} <a href="{{ url_for('delete_assigned_task', task_id=task.id) }}"><i class="bi bi-trash3"></i></a>
+                                </li>
+                            {% endfor %}
+                            </ol>
+                        </td>
+                        <td><a href="{{ url_for('edit_supp_tasks', supp_id=supp.id, user_id=user.id) }}">Añadir tarea</a></td>
+                    </tr>
+                  {% endfor %}
+                  <tr></tr>
+              </tbody>
+          </table>
+  </div>
+</div>
+{% endblock %}
