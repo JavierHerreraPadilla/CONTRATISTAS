@@ -23,7 +23,7 @@
                     <td>{{ worker.identification }}</td>
                     <td><label for="w-{{ worker.id }}">{{ worker.last_name }}</label></td>
                     <td><label for="w-{{ worker.id }}">{{ worker.first_name }}</label></td>
-                    <td><input type="checkbox" name="w-{{ worker.id }}" id="w-{{ worker.id }}" value="{{ worker.id }}"></td>
+                    <td><input type="checkbox" name="w-{{ worker.id }}" id="w-{{ worker.id }}" value="{{ worker.id }}" {% if not worker.requirements %} disabled data-bs-toggle="tooltip" data-bs-placement="top" title="No cumple con los requisitos del mes" {% elif worker.requirements[-1].para_date.year != current_date.year or worker.requirements[-1].para_date.month != current_date.month %} disabled data-bs-toggle="tooltip" data-bs-placement="top" title="No cumple con los requisitos del mes"{% endif %}></td>
                   </tr>
                   {% endfor %}
               </table>

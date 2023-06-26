@@ -1,12 +1,11 @@
-import flask
-
+import os
 from ingresos import app, db
-from flask import session, abort, render_template, request, jsonify, redirect, url_for, flash
-from .models import Client, Supplier, Worker, Job, JobWorker, ClientVenue, SupplierAssignedJobs
-from .forms import LoginForm, RegisterForm, WorkerForm, JobForm, AssignedJobForm, MultipleJobForm
+from flask import session, render_template, request, redirect, url_for, flash, send_from_directory
+from .models import Client, Supplier, Worker, Job, JobWorker, ClientVenue, SupplierAssignedJobs, WorkerRequirements
+from .forms import LoginForm, RegisterForm, WorkerForm, JobForm, AssignedJobForm, MultipleJobForm, WorkerRequirementsForm
 from flask_login import login_user, logout_user, login_required, current_user, LoginManager
-import requests
-from datetime import datetime, timedelta
+from datetime import datetime
+from werkzeug.utils import secure_filename
 import calendar
 from .decorators import client_only, supplier_only
 
@@ -104,7 +103,8 @@ def client_panel():
 @app.route("/supplier-panel")
 @login_required
 def supp_panel():
-    return render_template("supp_panel.html", user=current_user)
+    return render_template("supp_panel.html", user=current_user,
+                           current_date=datetime.now())
 
 
 @app.route("/suppliers/create-new", methods=["POST", "GET"])
@@ -228,9 +228,11 @@ def delete_assigned_task():
 @supplier_only
 def register_worker():
     """this route allows suppliers to create their workers"""
+    req_form = WorkerRequirementsForm(req_date=datetime.now().date())
     session["workers_to_add"] = None  # esto es para borrar la lista de trabajadores añadadidos al momento de registrar una tarea
     form = WorkerForm()
     workers = current_user.workers
+
     if request.method == "POST" and form.validate_on_submit():
         form_data = dict(form.data)
         form_data.pop("submit")
@@ -240,64 +242,75 @@ def register_worker():
                             )
         db.session.add(new_worker)
         db.session.commit()
+        flash(f"Trabajador {new_worker.first_name} {new_worker.last_name} creado correctamento", "success")
+        return redirect(url_for('register_worker'))
+
+    return render_template("register-worker.html", user=current_user, form=form,
+                               workers=workers,
+                               req_form=req_form,
+                               current_date=datetime.now().date()
+                               )
+
+
+@app.route("/edit-worker-info", methods=["POST"])
+@login_required
+@supplier_only
+def edit_worker_info():
+    """edita la información de un trabajador ya creado"""
+    form = WorkerForm()
+    if form.validate_on_submit():
+        worker_to_edit = db.session.query(Worker).filter_by(id=int(request.form["worker_id"])).first()
+        for key in form.data:
+            if key in ["csrf_token", "submit"]:
+                continue
+            setattr(worker_to_edit, key, form.data[key])
+            db.session.commit()
+        flash("Información editada", "success")
         return redirect(url_for('register_worker'))
     else:
-        return render_template("register-worker.html", user=current_user, form=form,
-                               workers=workers)
-
+        return f"{form.errors}"
 
 
 @app.route("/create-job", methods=["POST", "GET"])
 @login_required
 @supplier_only
 def create_job():
-    print("session in main", session.get("workers_to_add"))
     added_workers = list(enumerate([db.session.query(Worker).filter_by(id=worker_id[1]).first() for worker_id in session.get("workers_to_add")])) if session.get("workers_to_add") else None
     forms = MultipleJobForm(jobs=[{}] * len(added_workers)) if added_workers else None
     if added_workers:
         for form in forms._fields.get("jobs"):
             form.assigned_jobs.choices = [(job.id, job.description) for job in current_user.assigned_jobs]
             form.venue.choices = [(venue.id, venue.venue_name) for venue in current_user.client.venues] #list(enumerate(current_user.client.venues))
-    workers = current_user.workers
+    workers = [worker for worker in current_user.workers if worker.is_active]
     if request.method == "POST" and forms.validate_on_submit():
         print("validaron todas")
-        print("++/+/+//+/", forms.data)
-        # workers_id_list = [int(worker[1]) for worker in request.form.to_dict().items() if worker[0].startswith("worker")]
-        # if len(workers_id_list) == 0:
-        #     flash("Cada trabajo debe tener por lo menos un trabajador", "danger")
-        #     return redirect(url_for('create_job'))
-        # new_job = Job(title=form.title.data,
-        #               description=form.assigned_jobs.data,
-        #               start_date=form.start_date.data,
-        #               end_date=form.end_date.data,
-        #               supplier_id=current_user.id,
-        #               client_venue_id=form.venue.data
-        #               )
-        # db.session.add(new_job)
-        # db.session.commit()
-        # for worker_id in workers_id_list:
-        #     new_jobworker = JobWorker(job_id=new_job.id,
-        #                               worker_id=worker_id)
-        #     db.session.add(new_jobworker)
-        #     db.session.commit()
-        # flash("trabajo creado exitosamente", "success")
-        # session["workers_to_add"] = None
-        flash("validó", "success")
-        return redirect(url_for('create_job'))
+        for ind, form in enumerate(forms.data['jobs']):
+            print(form, "worker", session["workers_to_add"][ind])
+            new_job = Job(title=db.session.query(SupplierAssignedJobs).filter_by(id=form["assigned_jobs"]).first().description,
+                      description=form["assigned_jobs"],
+                      start_date=form["start_date"],
+                      end_date=form["end_date"],
+                      supplier_id=current_user.id,
+                      client_venue_id=form["venue"])
+            db.session.add(new_job)
+            db.session.commit()
+            # relate new_job to its worker in JobWorkers
+            new_job_worker = JobWorker(job_id=new_job.id,
+                                       worker_id=added_workers[ind][1].id)
+            db.session.add(new_job_worker)
+            db.session.commit()
+            session["workers_to_add"] = None
+            msg_created_jobs = "Trabajos creados" if len(added_workers) > 1 else "Trabajo creado"
+            flash(f"{msg_created_jobs} exitosamente", "success")
+            return redirect(url_for('create_job', current_date=datetime.now()))
     elif request.method == "POST":
-        print(forms.errors)
-        return redirect(url_for('create_job'))
-
-    # print(form.errors)
-    # if form.errors:
-    #     message = [form.errors.get(key)[0] for key in form.errors]
-    #     print(message)
-    #     flash(f"{(' - ').join(message)}", "danger")
-
+        flash(f"{forms.errors}", "warning")
+        return redirect(url_for('create_job', current_date=datetime.now()))
     return render_template("create-job.html", user=current_user,
                            workers=workers,
                            forms=forms,
-                           added_workers=added_workers)
+                           added_workers=added_workers,
+                           current_date=datetime.now())
 
 
 @app.route("/add-worker-to-list", methods=["POST", "GET"])
@@ -305,12 +318,10 @@ def create_job():
 @supplier_only
 def add_worker_to_list():
     if request.method == "POST":
-        print("+-+-+-", request.form.to_dict())
         if not session.get("workers_to_add"):
             session["workers_to_add"]: list = [(key, int(value)) for key, value in request.form.to_dict().items()]
         else:
             session["workers_to_add"] = session["workers_to_add"] + [(key, int(value)) for key, value in request.form.to_dict().items()]
-    print("session", session["workers_to_add"])
     return redirect(url_for('create_job', user=current_user))
 
 
@@ -328,16 +339,84 @@ def remove_worker_form_list():
     return redirect(url_for('create_job', user=current_user))
 
 
-@app.route("/del-worker")
+@app.route("/del-worker", methods=["POST"])
 @login_required
 @supplier_only
 def delete_worker():
-    worker_id = int(request.args.to_dict().get("worker_id"))
-    worker = db.session.query(Worker).filter_by(id=worker_id).first()
-    db.session.delete(worker)
-    db.session.commit()
-    flash("Trabajador elminado correctamente", "success")
+    if request.form["password"] == current_user.password:
+        worker_id = int(request.args.to_dict().get("worker_id"))
+        worker = db.session.query(Worker).filter_by(id=worker_id).first()
+        worker.is_active = not worker.is_active
+        db.session.commit()
+        message = "Trabajador elminado correctamente" if not worker.is_active else "Se reactivó el trabajador"
+        flash(message, "success")
+        return redirect(url_for('register_worker', user=current_user))
+    flash("Contraseña incorrecta", "danger")
+    return redirect(url_for('register_worker'))
+
+
+@app.route("/sup-reports")
+@login_required
+@supplier_only
+def supp_reports():
+    """Shows info on the jobs done by the logged supplier"""
+    # todo
+    return render_template('supp-reports.html', user=current_user)
+
+import base64
+
+@app.route("/add_worker_requirements", methods=["POST"])
+@login_required
+@supplier_only
+def add_worker_requirements():
+    """para añadair los requerimientos mensuales del trabajador
+    ej: parafiscales, cursos, ..."""
+    req_form = WorkerRequirementsForm()
+    if req_form.validate_on_submit():
+        file = req_form.req_doc.data
+        worker = db.session.query(Worker).filter_by(id=req_form.worker_id.data).first()
+        worker_identification = worker.identification
+        worker_name = worker.first_name + worker.last_name
+        print(request.files)
+        file_name = f"PLANILLA - {worker_identification} - {req_form.req_date.data.strftime('%B')}" + ".pdf"
+        file_path = os.path.join(app.config["UPLOAD_FOLDER"], file_name)
+        if file_name in os.listdir(app.config['UPLOAD_FOLDER']):
+            flash(f"Planilla para el trabajador { worker_name.upper()} "
+                  f"en el mes de {req_form.req_date.data.strftime('%B')} ya existe.", "info")
+            return redirect(url_for("register_worker", user=current_user))
+        file.save(file_path)
+        new_req = WorkerRequirements(para_date=req_form.req_date.data,
+                                     document=file_name,
+                                 worker_id=req_form.worker_id.data
+                                 )
+        db.session.add(new_req)
+        db.session.commit()
+
+        flash("Parafiscales registrados", "success")
+    else:
+        flash(f"{req_form.errors}", "warning")
     return redirect(url_for('register_worker', user=current_user))
+
+
+from pathlib import Path
+
+
+@app.route("/serve_document/<int:requirement_id>")
+@login_required
+def serve_document(requirement_id):
+    """Descarga el pdf plailla parafiscales"""
+    # todo cambiar el url_parameter de requirement_id a nombre del documento. Es más seguro
+    file_name = db.session.query(WorkerRequirements).filter_by(id=int(requirement_id)).first().document
+    file_path = app.config["UPLOAD_FOLDER"] / Path(file_name)
+    if file_path.exists():
+        return send_from_directory(file_path.parent.absolute(), file_path.name)
+    else:
+        flash("El documento no existe", "info")
+        return redirect(url_for('register_worker', user=current_user))
+
+
+
+
 
 
 

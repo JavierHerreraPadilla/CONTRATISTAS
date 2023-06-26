@@ -1,6 +1,7 @@
 from flask_wtf import FlaskForm
-from wtforms.validators import DataRequired, Length, ValidationError, Email, EqualTo
+from wtforms.validators import DataRequired, Length, ValidationError, Email
 from wtforms.fields import StringField, IntegerField, TextAreaField, TimeField, DateField, SubmitField, SelectField, RadioField, PasswordField, FormField, FieldList
+from flask_wtf.file import FileField, FileRequired, FileAllowed
 from datetime import datetime
 
 # todo Crear validadores para revisar que el nit esté registardo
@@ -20,6 +21,19 @@ class JobDate:
             return
         if self.message is None:
             self.message = "Los trabajos no se pueden agendar en fechas pasadas"
+        raise ValidationError(self.message)
+
+
+class ParafiscalesDate:
+    """esta validador es para checkear que la fecha de los aprafiscales no esté en el pasado"""
+    def __init__(self, message=None):
+        self.message = None
+
+    def __call__(self, form, field):
+        if field.data.month >= datetime.now().month and field.data.year == datetime.now().year:
+            return
+        if self.message is None:
+            self.message = "Los parafiscales no pueden estar en el pasado"
         raise ValidationError(self.message)
 
 
@@ -65,7 +79,7 @@ class WorkerForm(FlaskForm):
     rh = SelectField(label="RH", choices=["+", "-"], validators=[DataRequired()])
     blood_type = SelectField(label="Tipo sangre", choices=["A", "B", "O", "AB"], validators=[DataRequired()])
     residency_state = SelectField(label="Departamento", choices=["Cund", "Ant"], validators=[DataRequired()])
-    residency_city = SelectField(label="Municipio", choices=["Bog", "Med"], validators=[DataRequired()])
+    residency_city = SelectField(label="Municipio residencia", choices=["Bog", "Med"], validators=[DataRequired()])
     origin_country = SelectField(label="País de origen", choices=["Colombia", "Otros"], validators=[DataRequired()])
     mobile_phone = IntegerField(label="Teléfono celular", validators=[DataRequired()])
     submit = SubmitField(label="Registrar")
@@ -75,8 +89,8 @@ class JobForm(FlaskForm):
     # title = StringField(label="Trabajo")
     assigned_jobs = SelectField(label="Trabajos habilitados", coerce=int)
     venue = SelectField(label="Seleccione sede", coerce=int)
-    start_date = DateField(label="Fecha de inicio", default=datetime.now().date())#, validators=[DataRequired(), JobDate()])
-    end_date = DateField(label="Fecha de terminanción", default=datetime.now().date()) #, validators=[DataRequired(), JobEnds(fieldname="start_date")])
+    start_date = DateField(label="Fecha de inicio", validators=[DataRequired(), JobDate()], default=datetime.now().date())
+    end_date = DateField(label="Fecha de terminanción", validators=[DataRequired(), JobEnds(fieldname="start_date")], default=datetime.now().date())
     # submit = SubmitField(label="Crear trabajo")
 
 
@@ -89,3 +103,10 @@ class AssignedJobForm(FlaskForm):
     description = StringField(label="Descripción", validators=[DataRequired()])
     supp_id = IntegerField(label="supp_id")
     submit = SubmitField(label="Crear")
+
+
+class WorkerRequirementsForm(FlaskForm):
+    req_date = DateField(label="Fecha de parafiscales", validators=[DataRequired(), ParafiscalesDate()])
+    worker_id = IntegerField(label="worker_id")
+    req_doc = FileField(label="Documento", validators=[FileRequired(), FileAllowed(["pdf"], "Únicamente PPDF")])
+    submit = SubmitField(label="Guardar requerimiento")

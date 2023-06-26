@@ -1,7 +1,8 @@
 import datetime
 from ingresos import db
 from flask_login import UserMixin
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import UniqueConstraint, CheckConstraint, text
+from datetime import datetime as dt
 
 
 class Client(db.Model, UserMixin):
@@ -87,6 +88,7 @@ class Worker(db.Model):
 
     supplier_id = db.Column(db.Integer, db.ForeignKey("suppliers.id")) # foreign key to Supplier
     jobs = db.relationship("JobWorker", backref="worker", lazy=True)
+    requirements = db.relationship("WorkerRequirements", backref="worker", lazy=True)
 
     __table_args__ = (
         UniqueConstraint('identification', 'supplier_id', name='unique_worker_supplier'),   # pongo que sea única la combinación nit y client_id porque el mismo supplier puede estar registrado en diferentes clients
@@ -112,7 +114,22 @@ class Job(db.Model):
 
 
 class JobWorker(db.Model):
+    """this table records the id of a worker linked to the id of a job"""
     ___tablename__ = "job_workers"
     id = db.Column(db.Integer, primary_key=True)
     job_id = db.Column(db.Integer, db.ForeignKey("jobs.id"))
     worker_id = db.Column(db.Integer, db.ForeignKey("workers.id"))
+
+
+class WorkerRequirements(db.Model):
+    """Esta tabala debe incluir todos los requerimientos que
+    el trabajador debe cumplir para que se le permita hacer trabajos"""
+    # TODO: por el momento solo va a incluir el mes de vigencia de los parafiscales
+    __tablename__ = "worker_requirements"
+    id = db.Column(db.Integer, primary_key=True)
+    para_date = db.Column(db.DateTime, nullable=True)
+    document = db.Column(db.Text)
+    worker_id = db.Column(db.Integer, db.ForeignKey("workers.id"))
+
+    def __repr__(self):
+        return f"{self.worker_id} - {self.para_date}"
