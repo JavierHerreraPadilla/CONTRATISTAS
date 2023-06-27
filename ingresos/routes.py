@@ -283,26 +283,27 @@ def create_job():
             form.venue.choices = [(venue.id, venue.venue_name) for venue in current_user.client.venues] #list(enumerate(current_user.client.venues))
     workers = [worker for worker in current_user.workers if worker.is_active]
     if request.method == "POST" and forms.validate_on_submit():
-        print("validaron todas")
-        for ind, form in enumerate(forms.data['jobs']):
-            print(form, "worker", session["workers_to_add"][ind])
-            new_job = Job(title=db.session.query(SupplierAssignedJobs).filter_by(id=form["assigned_jobs"]).first().description,
-                      description=form["assigned_jobs"],
-                      start_date=form["start_date"],
-                      end_date=form["end_date"],
-                      supplier_id=current_user.id,
-                      client_venue_id=form["venue"])
+        print("validaron todas", forms.data)
+        worker_objs = [worker_obj[1] for worker_obj in added_workers]
+        temp_jobs = list()
+        for job in zip(worker_objs, forms.data.get('jobs')):
+            new_job = Job(title=job[1].get("assigned_jobs"),
+                          description=job[1].get("assigned_jobs"),
+                          start_date=job[1].get("start_date"),
+                          end_date=job[1].get("end_date"),
+                          supplier_id=current_user.id,
+                          client_venue_id=job[1].get("venue"),
+                          )
+            temp_jobs.append(new_job)
             db.session.add(new_job)
-            db.session.commit()
-            # relate new_job to its worker in JobWorkers
+            db.session.flush()
             new_job_worker = JobWorker(job_id=new_job.id,
-                                       worker_id=added_workers[ind][1].id)
+                                        worker_id=job[0].id
+                            )
             db.session.add(new_job_worker)
             db.session.commit()
-            session["workers_to_add"] = None
-            msg_created_jobs = "Trabajos creados" if len(added_workers) > 1 else "Trabajo creado"
-            flash(f"{msg_created_jobs} exitosamente", "success")
-            return redirect(url_for('create_job', current_date=datetime.now()))
+            flash("Trabajos registrados", "success")
+        return redirect(url_for('create_job'))
     elif request.method == "POST":
         flash(f"{forms.errors}", "warning")
         return redirect(url_for('create_job', current_date=datetime.now()))
@@ -413,6 +414,8 @@ def serve_document(requirement_id):
     else:
         flash("El documento no existe", "info")
         return redirect(url_for('register_worker', user=current_user))
+
+
 
 
 

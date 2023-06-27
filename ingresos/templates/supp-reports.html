@@ -9,7 +9,9 @@
   </div>
   <div class="col-9 pt-2">
     <h3>Esta vista muestra todos los trabajos programados por el supplier</h3>
-
+    {% for job in user.jobs %}
+       {{ job.start_date.date() }}: {{ job }} - {{ job.workers }}<br>
+    {% endfor %}
   </div>
 </div>
 {% endblock %}

@@ -105,12 +105,14 @@ class Job(db.Model):
     description = db.Column(db.Text, nullable=False)
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=False, default=start_date + datetime.timedelta(days=30))
+
     supplier_id = db.Column(db.Integer, db.ForeignKey("suppliers.id"))
     client_venue_id = db.Column(db.Integer, db.ForeignKey("client_venues.id"))
+
     workers = db.relationship("JobWorker", backref="job", lazy=True)
 
     def __repr__(self):
-        return f"{self.title}"
+        return f"{self.__dict__}"
 
 
 class JobWorker(db.Model):
@@ -119,6 +121,9 @@ class JobWorker(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     job_id = db.Column(db.Integer, db.ForeignKey("jobs.id"))
     worker_id = db.Column(db.Integer, db.ForeignKey("workers.id"))
+
+    def __repr__(self):
+        return f"{self.worker}"
 
 
 class WorkerRequirements(db.Model):
