@@ -4,14 +4,60 @@
 
 {% block content %}
 <div class="row">
-  <div class="col-3">
     {% include 'navbar.html' %}
-  </div>
-  <div class="col-9 pt-2">
+  <div class="col-9 pt-2 ms-3">
     <h3>Esta vista muestra todos los trabajos programados por el supplier</h3>
-    {% for job in user.jobs %}
-       {{ job.start_date.date() }}: {{ job }} - {{ job.workers }}<br>
-    {% endfor %}
+    <table class="table table-striped table-hover table-sm">
+      <thead>
+       <th class="text-center">Inicio / Fin</th>
+       <th>Sede</th>
+       <th>Trabajo</th>
+       <th>Trabajador asignado</th>
+       <th>Eliminar</th>
+      </thead>
+        {% for job in user.jobs | sort(reverse=true, attribute="start_date") %}
+       <tr>
+        <td class="text-center">{{ job.start_date.date() }} / {{ job.end_date.date() }}</td>
+        <td>{{ job.client_venue }}</td>
+        <td>{{ job }}</td>
+        <td>{{ job.workers[0] }}</td>
+        <td>
+            {% if job.start_date.date() >= today %}
+            <a data-bs-toggle="modal" data-bs-target="#delete-job-modal-{{ job.id }}"><i class="bi bi-trash3" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar"></i></a>
+            {% else %}
+            <i class="bi bi-trash3" data-bs-toggle="tooltip" data-bs-placement="top" title="No se puiede eliminar" style="color:gray;"></i>
+            {% endif %}
+        </td>
+       </tr>
+
+            <!-- Modal eliminar -->
+        {% if job.start_date.date() >= today %} {# no se crea modal para los trabajos de fechas anteriores al día actual #}
+            <div class="modal fade" id="delete-job-modal-{{ job.id }}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Eliminar trabajo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    Está se seguro de eliminar {{ job.description }} el día {{ job.start_date.date() }}?
+                  </div>
+                  <div class="modal-footer">
+
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a href="{{ url_for('delete_job', job_id=job.id) }}" class="btn btn-danger">Eliminar</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+        {% endif %}
+            <!-- FIN Modal eliminar -->
+
+
+
+
+         {% endfor %}
+    </table>
   </div>
 </div>
 {% endblock %}

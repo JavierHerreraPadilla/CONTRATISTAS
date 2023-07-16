@@ -95,7 +95,7 @@ class Worker(db.Model):
     )
 
     def __repr__(self):
-        return f"{self.id}-{self.first_name}-{self.last_name} "
+        return f"{self.id} - {self.first_name} {self.last_name} "
 
 
 class Job(db.Model):
@@ -112,7 +112,7 @@ class Job(db.Model):
     workers = db.relationship("JobWorker", backref="job", lazy=True)
 
     def __repr__(self):
-        return f"{self.__dict__}"
+        return f"{self.title}"
 
 
 class JobWorker(db.Model):
@@ -134,6 +134,8 @@ class WorkerRequirements(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     para_date = db.Column(db.DateTime, nullable=True)
     document = db.Column(db.Text)
+    radication_number = db.Column(db.Integer)
+    until_date = db.Column(db.DateTime)
     worker_id = db.Column(db.Integer, db.ForeignKey("workers.id"))
 
     def __repr__(self):

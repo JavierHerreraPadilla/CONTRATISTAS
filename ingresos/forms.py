@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms.validators import DataRequired, Length, ValidationError, Email
-from wtforms.fields import StringField, IntegerField, TextAreaField, TimeField, DateField, SubmitField, SelectField, RadioField, PasswordField, FormField, FieldList
+from wtforms.fields import StringField, IntegerField, DateField, SubmitField, SelectField, PasswordField, FormField, FieldList
 from flask_wtf.file import FileField, FileRequired, FileAllowed
 from datetime import datetime
 
@@ -78,11 +78,11 @@ class WorkerForm(FlaskForm):
     first_name = StringField(label="Nombre", validators=[DataRequired()])
     rh = SelectField(label="RH", choices=["+", "-"], validators=[DataRequired()])
     blood_type = SelectField(label="Tipo sangre", choices=["A", "B", "O", "AB"], validators=[DataRequired()])
-    residency_state = SelectField(label="Departamento", choices=["Cund", "Ant"], validators=[DataRequired()])
-    residency_city = SelectField(label="Municipio residencia", choices=["Bog", "Med"], validators=[DataRequired()])
+    residency_state = SelectField(label="Departamento", validators=[DataRequired()], render_kw={"id": "departamentos"})
+    residency_city = SelectField(label="Municipio residencia", validators=[DataRequired()], choices=["Bogotá", "Medellín", "Cartagena"], render_kw={"id": "municipios"})
     origin_country = SelectField(label="País de origen", choices=["Colombia", "Otros"], validators=[DataRequired()])
     mobile_phone = IntegerField(label="Teléfono celular", validators=[DataRequired()])
-    submit = SubmitField(label="Registrar")
+    submit = SubmitField(label="REGISTRAR")
 
 
 class JobForm(FlaskForm):
@@ -106,7 +106,8 @@ class AssignedJobForm(FlaskForm):
 
 
 class WorkerRequirementsForm(FlaskForm):
-    req_date = DateField(label="Fecha de parafiscales", validators=[DataRequired(), ParafiscalesDate()])
+    req_date = DateField(label="Fecha de pago", validators=[DataRequired(), ParafiscalesDate()])
     worker_id = IntegerField(label="worker_id")
-    req_doc = FileField(label="Documento", validators=[FileRequired(), FileAllowed(["pdf"], "Únicamente PPDF")])
+    radication_number = IntegerField(label="Número de radicación")
+    req_doc = FileField(label="Documento", validators=[FileAllowed(["pdf"], "Únicamente PDF")])
     submit = SubmitField(label="Guardar requerimiento")

@@ -11,7 +11,8 @@
     <div class="col-10 pt-5">
         <h3>TRABAJADORES</h3>
         <button class="page-btn" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-create-worker" aria-controls="offcanvas-create-worker"> REGISTRAR TRABAJADOR</button> |
-        <a type="button">REGISTRAR MÚLTIPLES TRABAJADORES</a>
+        <a type="button">REGISTRAR MÚLTIPLES TRABAJADORES</a> |
+        <a href="{{ url_for('planilla_masiva') }}">INGRESO MASIVO DE PLANILLA PILA</a>
 
         <!-- OFFCANVAS PARA REGISTRAR TABAJADOR-->
         <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvas-create-worker" aria-labelledby="offcanvasRightLabel" style="width:75%;">
@@ -24,7 +25,7 @@
                                         {{ form.hidden_tag() }}
                                         <div class="row">
                                          <div class="col-2 text-end">
-                                            {{ form.submit(class="btn btn-primary") }}
+                                            {{ form.submit(class="btn btn-offcanvas") }}
                                         </div>
                                         <div class="col-8">
                                             <table class="table table-striped table-hover table-sm">
@@ -54,6 +55,7 @@
             <th>APELLIDO</th>
             <th>NOMBRE</th>
             <th>ESTADO</th>
+            <th>REQUERIMIENTOS</th>
             <th>ACCIONES</th>
             </thead>
             <tbody>
@@ -64,10 +66,21 @@
                 <td>{{ worker.first_name }}</td>
                 <td {% if worker.is_active %}style="color:green;"{% else %}style="color:red;"{% endif %}>{{ worker.is_active }}</td>
                 <td>
+                    {% if worker.requirements %}
+                       {% if worker.requirements[-1].para_date.date().month == current_date.month and worker.requirements[-1].para_date.date().year == current_date.year %}
+                            <span style="color:green;">Planilla pagada el {{ worker.requirements[-1].para_date.date() }}.</span>
+                       {% else %}
+                            <span style="color:red;">No registra planilla para el mes corriente.</span>
+                       {% endif %}
+                    {% else %}
+                    <span style="color:red;">No regista paraficales.</span>
+                    {% endif %}
+                </td>
+                <td>
                     <a type="button" {% if worker.is_active %} data-bs-toggle="offcanvas" data-bs-target="#offcanvas-edit-worker-{{ worker.id }}" aria-controls="offcanvas-requirements-{{ worker.id }}"{% endif %}><i {% if not worker.is_active%}style="color:gray;"{% endif %} class="bi bi-pencil-square me-2" data-bs-toggle="tooltip" data-bs-placement="top" title="Editar info trabajdor"></i></a>
                     <a type="button" {% if worker.is_active %} data-bs-toggle="offcanvas" data-bs-target="#offcanvas-requirements-{{ worker.id }}" aria-controls="offcanvas-requirements-{{ worker.id }}"{% endif %}><i {% if not worker.is_active%}style="color:gray;"{% endif %} class="bi bi-folder-plus me-2" data-bs-toggle="tooltip" data-bs-placement="top" title="Añadir requerimientos"></i></a>
                     {% if worker.requirements %}<a type="button" {% if worker.is_active %} href="{{ url_for('serve_document', requirement_id=worker.requirements[-1].id) }}" {% endif %} target="_blank" style="color:green;"><i {% if not worker.is_active%}style="color:gray;"{% endif %} class="bi bi-filetype-pdf me-2" data-bs-toggle="tooltip" data-bs-placement="top" title="Descargar documento"></i></a>{% else %}<i class="bi bi-filetype-pdf me-2" style="color:gray;" data-bs-toggle="tooltip" data-bs-placement="top" title="No hay documento"></i>{% endif %}
-                    <i {% if not worker.is_active%}style="color:gray;"{% endif %} class="bi bi-info-circle me-2" data-bs-toggle="tooltip" data-bs-placement="top" title="Más información"></i>
+                    <a type="button" data-bs-toggle="modal" data-bs-target="#disable-worker-modal-{{ worker.id }}"><i {% if not worker.is_active%}style="color:gray;"{% endif %} class="bi bi-person-x-fill" data-bs-toggle="tooltip" data-bs-placement="top" title="Desactivar trabajador"></i></a>
                     <a type="button" data-bs-toggle="modal" data-bs-target="#delete-worker-modal-{{ worker.id }}"><i class="bi bi-trash3 me-2" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar trabajador"></i></a>
                 </td>
               </tr>
@@ -87,8 +100,9 @@
                               <form action="{{ url_for('add_worker_requirements') }}" method="post" enctype="multipart/form-data">
                                   {{ req_form.hidden_tag() }}
                                   {{ req_form.worker_id(value=worker.id, hidden=True) }}
-                                  {{ req_form.req_date }}
-                                  {{ req_form.req_doc }}
+                                  {{ req_form.radication_number(placeholder="No. Radicación") }}<br><br>
+                                  {{ req_form.req_date }}<br><br>
+                                  {{ req_form.req_doc }}<br><br>
                                   {{ req_form.submit }}
                               </form>
                           </div>
@@ -112,6 +126,7 @@
                                       <tr><td>{{ form.id_type.label }}</td><td>{{ form.id_type(value=worker.id_type) }}</td></tr>
                                       <tr><td>{{ form.last_name.label }}</td><td>{{ form.last_name(value=worker.last_name) }}</td></tr>
                                       <tr><td>{{ form.first_name.label }}</td><td>{{ form.first_name(value=worker.first_name) }}</td></tr>
+                                      <tr><td>{{ form.birth_date.label }}</td><td>{{ form.birth_date(value=worker.birth_date) }}</td></tr>
                                       <tr><td>{{ form.residency_state.label }}</td><td>{{ form.residency_state(value=worker.residency_city) }}</td></tr>
                                       <tr><td>{{ form.residency_city.label }}</td><td>{{ form.residency_city(value=worker.residency_city) }}</td></tr>
                                       <tr><td>{{ form.mobile_phone.label }}</td><td>{{ form.mobile_phone(value=worker.mobile_phone) }}</td></tr>
@@ -138,13 +153,47 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </button>
                               </div>
+
                               <div class="modal-body">
+                                  {% if not worker.jobs %}
                                   Confirmar eliminación del registro del trabajador: <br>
-                                  {{ worker.identification }} - {{ worker.first_name }} {{ worker.last_name }}
-                                  No es recomendable eliminar el registro de un trabajador. Es mejor desactivarlo.
+                                  <b>{{ worker.identification }} - {{ worker.first_name }} {{ worker.last_name }}</b>
+                                  <div class="modal-footer">
+                                  <form action="{{ url_for('delete_worker', worker_id=worker.id) }}" method="POST">
+                                      <input class="me-3" type="text" name="password" placeholder="Introduce tu contraseña" required>
+                                      <button type="submit" class="btn btn-danger">Borrar</button>
+                                  </form>
+                                  <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                              </div>
+                                  {% else %}
+                                    El trabajador <b>{{ worker.first_name }} {{ worker.last_name }}</b>
+                                    tiene registrada activades en el sistema. Por este motivo no se puede eliminar.
+                                    Si el trabajador no labora más en su compañía, se recomienda desactivarlo.
+                                  {% endif %}
+                              </div>
+
+
+                            </div>
+                          </div>
+                        </div>
+                     <!-- fin DELETE WORKER Modal -->
+
+        <!-- INICIO disable WORKER Modal -->
+                        <div class="modal fade" id="disable-worker-modal-{{ worker.id }}" tabindex="-1" role="dialog" aria-labelledby="delete-worker-modal-{{ worker.id }}Title" aria-hidden="true">
+                          <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title" id="disexampleModalLongTitle">Desactivar trabajador</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </button>
+                              </div>
+                              <div class="modal-body">
+                                  Confirmar la desactivación del registro del trabajador: <br>
+                                  {{ worker.identification }} - {{ worker.first_name }} {{ worker.last_name }}.<br>
+                                  <b>Si desactiva este trabajador, no se incluirá en el cargue masivo de planillas.</b>
                               </div>
                               <div class="modal-footer">
-                                  <form action="{{ url_for('delete_worker', worker_id=worker.id) }}" method="POST">
+                                  <form action="{{ url_for('disable_worker', worker_id=worker.id) }}" method="POST">
                                       <input class="me-3" type="text" name="password" placeholder="Introduce tu contraseña" required>
                                       <button type="submit" class="btn btn-danger">Borrar</button>
                                   </form>
@@ -153,13 +202,9 @@
                             </div>
                           </div>
                         </div>
-                     <!-- fin DELETE WORKER Modal -->
+                     <!-- fin disable WORKER Modal -->
+
             {% endfor %}
     </div>
 </div>
-
-
-
-
-
 {% endblock %}

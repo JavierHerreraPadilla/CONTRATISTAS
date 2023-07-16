@@ -1,10 +1,63 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}
+ Registrar trabajador
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    {% include "navbar.html" %}
+
+    <div class="col-10 pt-5">
+        <h3>INGRESO MASIVO DE PLANILLAS</h3>
+      <form action="{{ url_for('planilla_masiva') }}" method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+          <a href="{{ url_for('register_worker') }}" class="btn btn-offcanvas">Volver</a>
+          {{ form.submit(value="Guardar", class="btn btn-offcanvas") }}<br><br>
+
+        {{ form.radication_number.label }}
+        {{ form.radication_number }}
+        {{ form.req_date.label }}
+        {{ form.req_date }}
+        {{ form.req_doc.label }}
+        {{ form.req_doc }}
+      </form>
+
+        <table class="mt-3 table table-striped table-hover table-sm">
+            <thead>
+                <th>Identificación</th>
+                <th>Apellido</th>
+                <th>Nombre</th>
+                <th>Número radicación pila</th>
+                <th>Fecha de pago</th>
+                <th>Mes pagado</th>
+                <th>Vigencia</th>
+            </thead>
+            <tbody>
+                    {% for worker in workers %}
+                      <tr>
+                          <td>{{ worker.identification }}</td>
+                          <td>{{ worker.last_name }}</td>
+                          <td>{{ worker.first_name }}</td>
+                          {% if worker.requirements %}
+                          <td><input type="number" name="raditacion_number-{{ worker.id }}" value="{% if worker.requirements[-1].para_date.year == current_date.year and worker.requirements[-1].para_date.month == current_date.month %}{{ worker.requirements[-1].radication_number }}{% endif %}"></td>
+                          <td><input type="" name="req_date-{{ worker.id }}" value="{% if worker.requirements[-1].para_date.year == current_date.year and worker.requirements[-1].para_date.month == current_date.month %} {{ worker.requirements[-1].para_date.date() }} {% endif %} "></td>
+                          <td><input type="text" name="payed_month-{{ worker.id }}" value="{% if worker.requirements[-1].para_date.year == current_date.year and worker.requirements[-1].para_date.month == current_date.month %} {{ worker.requirements[-1].para_date.strftime('%B') }} {% endif %} "></td>
+                          <td><input type="" name="valid_date-{{ worker.id }}" value="{% if worker.requirements[-1].para_date.year == current_date.year and worker.requirements[-1].para_date.month == current_date.month %} {{ worker.requirements[-1].until_date.date() }} {% endif %} "></td> {# fecha de vigencia #}
+                          {% else %}
+                          <td><input type="number" name="raditacion_number-{{ worker.id }}" placeholder="No registra"></td>
+                          <td><input type="" name="req_date-{{ worker.id }}" placeholder="No registra"></td>
+                          <td><input type="text" name="payed_month-{{ worker.id }}" placeholder="No registra"></td>
+                          <td><input type="" name="valid_date-{{ worker.id }}" placeholder="No registra"></td>
+                          {% endif %}
+                      </tr>
+                    {% endfor %}
+            </tbody>
+
+        </table>
+    </div>
+
+
+</div>
+
+{% endblock %}

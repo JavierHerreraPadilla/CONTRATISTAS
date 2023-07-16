@@ -1,11 +1,12 @@
 import os
+from io import BytesIO
+from pathlib import Path
 from ingresos import app, db
 from flask import session, render_template, request, redirect, url_for, flash, send_from_directory
 from .models import Client, Supplier, Worker, Job, JobWorker, ClientVenue, SupplierAssignedJobs, WorkerRequirements
 from .forms import LoginForm, RegisterForm, WorkerForm, JobForm, AssignedJobForm, MultipleJobForm, WorkerRequirementsForm
 from flask_login import login_user, logout_user, login_required, current_user, LoginManager
-from datetime import datetime
-from werkzeug.utils import secure_filename
+from datetime import datetime, timedelta
 import calendar
 from .decorators import client_only, supplier_only
 
@@ -22,9 +23,6 @@ def load_user(nit):
     supp = Supplier.query.filter_by(nit=nit).first()
     user = client or supp
     return user
-
-
-### decorator client only
 
 
 @app.route("/")
@@ -173,6 +171,7 @@ def edit_venue():
                                       client_id=current_user.id)
                      )
         db.session.commit()
+        flash("Sede creada. Puedes editar el nombre.", "info")
         return redirect(url_for("admin_venues"))
 
     else:
@@ -223,6 +222,9 @@ def delete_assigned_task():
     return redirect(url_for('supp_list', user=current_user))
 
 
+import requests
+url_departamentos = "https://municipiosapi-1-p3448576.deta.app/all"
+
 @app.route("/register-worker", methods=["POST", "GET"])
 @login_required
 @supplier_only
@@ -231,6 +233,8 @@ def register_worker():
     req_form = WorkerRequirementsForm(req_date=datetime.now().date())
     session["workers_to_add"] = None  # esto es para borrar la lista de trabajadores añadadidos al momento de registrar una tarea
     form = WorkerForm()
+    # form.residency_state.choices = requests.get(url_departamentos).json() #this works but i need to be connected to the internet for it to use my API
+    form.residency_state.choices = ["Antioquia", "Bolívar"]
     workers = current_user.workers
 
     if request.method == "POST" and form.validate_on_submit():
@@ -287,7 +291,7 @@ def create_job():
         worker_objs = [worker_obj[1] for worker_obj in added_workers]
         temp_jobs = list()
         for job in zip(worker_objs, forms.data.get('jobs')):
-            new_job = Job(title=job[1].get("assigned_jobs"),
+            new_job = Job(title=db.session.query(SupplierAssignedJobs).filter_by(id=job[1].get("assigned_jobs")).first().description,
                           description=job[1].get("assigned_jobs"),
                           start_date=job[1].get("start_date"),
                           end_date=job[1].get("end_date"),
@@ -347,7 +351,7 @@ def delete_worker():
     if request.form["password"] == current_user.password:
         worker_id = int(request.args.to_dict().get("worker_id"))
         worker = db.session.query(Worker).filter_by(id=worker_id).first()
-        worker.is_active = not worker.is_active
+        db.session.delete(worker)
         db.session.commit()
         message = "Trabajador elminado correctamente" if not worker.is_active else "Se reactivó el trabajador"
         flash(message, "success")
@@ -361,11 +365,19 @@ def delete_worker():
 @supplier_only
 def supp_reports():
     """Shows info on the jobs done by the logged supplier"""
-    # todo
-    return render_template('supp-reports.html', user=current_user)
+    today = datetime.now().date()
+    return render_template('supp-reports.html', user=current_user, today=today)
 
-import base64
 
+@app.route("/delete-job/<int:job_id>")
+@login_required
+@supplier_only
+def delete_job(job_id):
+    job_to_delete = db.session.query(Job).get(job_id)
+    db.session.delete(job_to_delete)
+    db.session.commit()
+    flash("Trabajo eliminado", "info")
+    return redirect(url_for("supp_reports"))
 @app.route("/add_worker_requirements", methods=["POST"])
 @login_required
 @supplier_only
@@ -379,17 +391,19 @@ def add_worker_requirements():
         worker_identification = worker.identification
         worker_name = worker.first_name + worker.last_name
         print(request.files)
-        file_name = f"PLANILLA - {worker_identification} - {req_form.req_date.data.strftime('%B')}" + ".pdf"
+        file_name = f"PLANILLA - {worker_identification} - {req_form.req_date.data}" + ".pdf"
         file_path = os.path.join(app.config["UPLOAD_FOLDER"], file_name)
         if file_name in os.listdir(app.config['UPLOAD_FOLDER']):
             flash(f"Planilla para el trabajador { worker_name.upper()} "
                   f"en el mes de {req_form.req_date.data.strftime('%B')} ya existe.", "info")
             return redirect(url_for("register_worker", user=current_user))
-        file.save(file_path)
         new_req = WorkerRequirements(para_date=req_form.req_date.data,
                                      document=file_name,
-                                 worker_id=req_form.worker_id.data
-                                 )
+                                     radication_number=req_form.radication_number.data,
+                                     until_date=req_form.req_date.data + timedelta(days=30),
+                                     worker_id=req_form.worker_id.data,
+                                         )
+        file.save(file_path)
         db.session.add(new_req)
         db.session.commit()
 
@@ -397,9 +411,6 @@ def add_worker_requirements():
     else:
         flash(f"{req_form.errors}", "warning")
     return redirect(url_for('register_worker', user=current_user))
-
-
-from pathlib import Path
 
 
 @app.route("/serve_document/<int:requirement_id>")
@@ -416,6 +427,60 @@ def serve_document(requirement_id):
         return redirect(url_for('register_worker', user=current_user))
 
 
+@app.route("/diable-worker/<int:worker_id>", methods=["POST", "GET"])
+def disable_worker(worker_id):
+    """this route disables an active worker.
+    If an active worker is disabled, it won't be possible to activate them again
+    this is goign to take """
+    if request.form.get("password") != current_user.password:
+        flash("Contraseña incorrecta. No se desactivó trabajador", "danger")
+        return redirect(url_for("register_worker"), user=current_user)
+    worker_to_disable = db.session.query(Worker).get(worker_id)
+    worker_to_disable.is_active = not worker_to_disable.is_active
+    db.session.commit()
+    flash(f"trabajdor desactivado {worker_id} - {worker_to_disable}", "info")
+    return redirect(url_for("register_worker", user=current_user))
+
+
+import sys
+
+@login_required
+@supplier_only
+@app.route("/planilla_masiva/", methods=["POST", "GET"])
+def planilla_masiva():
+    form = WorkerRequirementsForm()
+    workers = [worker for worker in current_user.workers if worker.is_active]
+
+    if form.validate_on_submit():
+        # todo agregar todos los paraficales a cada trabajdor
+        file = form.req_doc.data
+        file_content = file.read()
+        for index, worker in enumerate(workers):
+            worker_identification = worker.identification
+            file_name = f"PLANILLA - {worker_identification} - {form.req_date.data}" + ".pdf"
+            file_path = os.path.join(app.config["UPLOAD_FOLDER"], file_name)
+            print("before", file.read())
+            # file.save(file_path)
+            with open(file_path, "wb") as f:
+                f.write(file_content)
+
+            new_requeirement = WorkerRequirements(
+                para_date=form.req_date.data,
+                radication_number=form.radication_number.data,
+                until_date=form.req_date.data + timedelta(days=30),
+                worker_id=worker.id,
+                document=file_name
+            )
+            db.session.add(new_requeirement)
+            db.session.commit()
+            flash("Requerimientos registrados", "info")
+    elif request.method == "POST":
+        flash(f"{form.errors}", "danger")
+
+    return render_template("planilla_masiva.html", user=current_user,
+                           workers=workers,
+                           current_date=datetime.now().date(),
+                           form=form)
 
 
 
