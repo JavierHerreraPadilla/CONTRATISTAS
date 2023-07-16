@@ -1,5 +1,4 @@
 import os
-from io import BytesIO
 from pathlib import Path
 from ingresos import app, db
 from flask import session, render_template, request, redirect, url_for, flash, send_from_directory
@@ -417,7 +416,6 @@ def add_worker_requirements():
 @login_required
 def serve_document(requirement_id):
     """Descarga el pdf plailla parafiscales"""
-    # todo cambiar el url_parameter de requirement_id a nombre del documento. Es más seguro
     file_name = db.session.query(WorkerRequirements).filter_by(id=int(requirement_id)).first().document
     file_path = app.config["UPLOAD_FOLDER"] / Path(file_name)
     if file_path.exists():
@@ -442,8 +440,6 @@ def disable_worker(worker_id):
     return redirect(url_for("register_worker", user=current_user))
 
 
-import sys
-
 @login_required
 @supplier_only
 @app.route("/planilla_masiva/", methods=["POST", "GET"])
@@ -452,7 +448,6 @@ def planilla_masiva():
     workers = [worker for worker in current_user.workers if worker.is_active]
 
     if form.validate_on_submit():
-        # todo agregar todos los paraficales a cada trabajdor
         file = form.req_doc.data
         file_content = file.read()
         for index, worker in enumerate(workers):
